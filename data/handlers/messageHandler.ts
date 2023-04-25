@@ -11,7 +11,6 @@ import csv from 'csv-parser'
 import ProgressBar from 'progress'
 import { createPGClient } from '~/data/database'
 
-
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -42,25 +41,34 @@ export enum MessageType {
   GUILD_ANNOUNCEMENT,
   ANNOUNCEMENT_THREAD = 10,
   PUBLIC_THREAD,
-  PRIVATE_THREAD
+  PRIVATE_THREAD,
 }
 
 export const messageHandler = async () => {
   const { channelMessageMap, channels } = await parseChannels()
 }
 
-export const getDMMessages = (channels: IChannel[]): IChannel[] => channels.filter((channel) => channel.type === MessageType.DM)
-export const getGroupMessages = (channels: IChannel[]): IChannel[] => channels.filter((channel) => channel.type === MessageType.GROUP_DM)
+export const getDMMessages = (channels: IChannel[]): IChannel[] =>
+  channels.filter((channel) => channel.type === MessageType.DM)
+export const getGroupMessages = (channels: IChannel[]): IChannel[] =>
+  channels.filter((channel) => channel.type === MessageType.GROUP_DM)
 
-const parseChannels = async (): Promise<{ channels: IChannel[], channelMessageMap: Map<string, IMessage[]> }> => {
+const parseChannels = async (): Promise<{ channels: IChannel[]; channelMessageMap: Map<string, IMessage[]> }> => {
   return new Promise((resolve, reject) => {
-    const messageDirectories = readdirSync(path.resolve(__dirname, './../input/messages')).filter((file) => !['.DS_Store', 'index.json'].includes(file))
-    const bar = new ProgressBar('Processing [:bar] :current/:total :percent :etas', { total: messageDirectories.length })
+    const messageDirectories = readdirSync(path.resolve(__dirname, './../input/messages')).filter(
+      (file) => !['.DS_Store', 'index.json'].includes(file),
+    )
+    const bar = new ProgressBar('Processing [:bar] :current/:total :percent :etas', {
+      total: messageDirectories.length,
+    })
     const channels: IChannel[] = []
     const channelMessageMap: Map<string, IMessage[]> = new Map()
 
     for (let i = 0; i < messageDirectories.length; i++) {
-      const channelFile = readFileSync(path.resolve(__dirname, `./../input/messages/${messageDirectories[i]}/channel.json`), 'utf8')
+      const channelFile = readFileSync(
+        path.resolve(__dirname, `./../input/messages/${messageDirectories[i]}/channel.json`),
+        'utf8',
+      )
       const messagesFilePath = path.resolve(__dirname, `./../input/messages/${messageDirectories[i]}/messages.csv`)
 
       const channel = JSON.parse(channelFile)
@@ -68,17 +76,17 @@ const parseChannels = async (): Promise<{ channels: IChannel[], channelMessageMa
       const channelMessages: IMessage[] = []
 
       createReadStream(messagesFilePath)
-          .pipe(csv())
-          .on('data', (data: IMessage) => {
-            channelMessages.push(data)
-          })
-          .on('finish', () => {
-            channelMessageMap.set(messageDirectories[i], channelMessages)
-            bar.tick()
-            if (channelMessageMap.size === messageDirectories.length) {
-              resolve({ channels, channelMessageMap })
-            }
-          })
+        .pipe(csv())
+        .on('data', (data: IMessage) => {
+          channelMessages.push(data)
+        })
+        .on('finish', () => {
+          channelMessageMap.set(messageDirectories[i], channelMessages)
+          bar.tick()
+          if (channelMessageMap.size === messageDirectories.length) {
+            resolve({ channels, channelMessageMap })
+          }
+        })
     }
   })
 }

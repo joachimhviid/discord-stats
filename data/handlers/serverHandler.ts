@@ -13,10 +13,15 @@ export interface IServer {
 }
 
 export const serverHandler = async () => {
-  const serverDirectories = readdirSync(path.resolve(__dirname, './../input/servers')).filter((file) => !['.DS_Store', 'index.json'].includes(file))
+  const serverDirectories = readdirSync(path.resolve(__dirname, './../input/servers')).filter(
+    (file) => !['.DS_Store', 'index.json'].includes(file),
+  )
 
   for (let i = 0; i < serverDirectories.length; i++) {
-    const guildFile = readFileSync(path.resolve(__dirname, `./../input/servers/${serverDirectories[i]}/guild.json`), 'utf8')
+    const guildFile = readFileSync(
+      path.resolve(__dirname, `./../input/servers/${serverDirectories[i]}/guild.json`),
+      'utf8',
+    )
     const server: IServer = JSON.parse(guildFile)
     await insertServer(server)
   }
