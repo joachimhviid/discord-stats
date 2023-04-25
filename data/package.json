@@ -1,0 +1,19 @@
+{
+  "name": "discord-stats-data",
+  "version": "1.0.0",
+  "private": "true",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch index.ts"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.3",
+    "@types/progress": "^2.0.5"
+  },
+  "dependencies": {
+    "csv-parser": "^3.0.0",
+    "knex": "^2.4.2",
+    "pg": "^8.10.0",
+    "progress": "^2.0.3"
+  }
+}
