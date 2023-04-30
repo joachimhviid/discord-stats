@@ -86,6 +86,7 @@ export const messageHandler = async () => {
         const filteredRecipients = channels[i].recipients?.filter((recipient) => recipient !== myUserId)
         if (filteredRecipients) {
           await insertUsers(filteredRecipients, client)
+          await insertChannelRecipients(filteredRecipients, channels[i].id, client)
         }
         await insertChannel(channels[i])
         bar.tick()
@@ -181,6 +182,17 @@ const insertUsers = async (recipients: string[], client: Knex) => {
         })
         await insert
       }
+    }),
+  )
+}
+
+const insertChannelRecipients = async (recipientIds: string[], channelId: string, client: Knex) => {
+  await Promise.all(
+    recipientIds.map(async (recipientId) => {
+      await client('channel_recipients')
+        .insert({ channel_id: channelId, user_id: recipientId })
+        .onConflict(['channel_id', 'user_id'])
+        .ignore()
     }),
   )
 }
