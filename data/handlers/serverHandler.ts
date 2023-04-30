@@ -33,5 +33,5 @@ const insertServer = async (server: IServer) => {
 
   const serverExists = await client('servers').where('id', server.id)
 
-  if (!serverExists) await client('servers').insert({ id: server.id, name: server.name })
+  if (serverExists.length === 0) await client('servers').insert({ id: server.id, name: server.name })
 }

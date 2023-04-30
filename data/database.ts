@@ -12,6 +12,8 @@ export const createPGClient = <TRecord extends Record<string, unknown> = any, TR
     client.PGClient = knex({
       client: 'pg',
       connection: process.env.DB_CONNECTION_STRING,
+      pool: { min: 2, max: 15 },
+      acquireConnectionTimeout: 1.5 * 60 * 1000,
     })
   }
   return client.PGClient as Knex<TRecord, TResult>
