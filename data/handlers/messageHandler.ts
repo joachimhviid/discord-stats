@@ -1,8 +1,3 @@
-// for each folder in '/messages/*'
-// parse channel.json to determine message type, location, recipients
-// parse messages.csv to an array of objects
-// insert into appropriate db table
-
 import { createReadStream, readdirSync } from 'fs'
 import path from 'node:path'
 import { fileURLToPath } from 'url'
@@ -85,8 +80,8 @@ export const messageHandler = async () => {
       case MessageType.GROUP_DM: {
         const filteredRecipients = channels[i].recipients?.filter((recipient) => recipient !== myUserId)
         if (filteredRecipients) {
-          await insertUsers(filteredRecipients, client)
-          await insertChannelRecipients(filteredRecipients, channels[i].id, client)
+          await insertUsers(client, filteredRecipients)
+          await insertChannelRecipients(client, filteredRecipients, channels[i].id)
         }
         await insertChannel(channels[i])
         bar.tick()
@@ -94,23 +89,13 @@ export const messageHandler = async () => {
       }
       default: {
         await insertChannel(channels[i])
+        const messages = channelMessageMap.get(`c${channels[i].id}`)
+        if (messages) await insertMessages(client, messages, channels[i].id)
         bar.tick()
       }
     }
   }
-
-  // Resolve channeltypes
-  // If its a DM type resolve recipients involved
-  // Filter own userId and lookup/insert other users
-  // Insert channel in DB
-  // Insert recipients linked to channel
-  // Insert message linked to channel
 }
-
-export const getDMMessages = (channels: IChannel[]): IChannel[] =>
-  channels.filter((channel) => channel.type === MessageType.DM)
-export const getGroupMessages = (channels: IChannel[]): IChannel[] =>
-  channels.filter((channel) => channel.type === MessageType.GROUP_DM)
 
 const parseChannels = async (): Promise<{ channels: IChannel[]; channelMessageMap: Map<string, IMessage[]> }> => {
   return new Promise((resolve, _reject) => {
@@ -165,10 +150,9 @@ const insertChannel = async (channel: IChannel) => {
   }
 }
 
-const insertUsers = async (recipients: string[], client: Knex) => {
+const insertUsers = async (client: Knex, recipients: string[]) => {
   await Promise.all(
     recipients.map(async (recipientId) => {
-      console.log('Checking if user exists', recipientId)
       const userExists = await client('users').where('id', recipientId)
 
       if (userExists.length === 0) {
@@ -186,12 +170,29 @@ const insertUsers = async (recipients: string[], client: Knex) => {
   )
 }
 
-const insertChannelRecipients = async (recipientIds: string[], channelId: string, client: Knex) => {
+const insertChannelRecipients = async (client: Knex, recipientIds: string[], channelId: string) => {
   await Promise.all(
     recipientIds.map(async (recipientId) => {
       await client('channel_recipients')
         .insert({ channel_id: channelId, user_id: recipientId })
         .onConflict(['channel_id', 'user_id'])
+        .ignore()
+    }),
+  )
+}
+
+const insertMessages = async (client: Knex, messages: IMessage[], channelId: string) => {
+  await Promise.all(
+    messages.map(async (message) => {
+      await client('messages')
+        .insert({
+          id: message.ID,
+          timestamp: message.Timestamp,
+          content: message.Contents,
+          attachment: message.Attachments,
+          channel_id: channelId,
+        })
+        .onConflict('id')
         .ignore()
     }),
   )
