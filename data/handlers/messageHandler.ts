@@ -84,6 +84,8 @@ export const messageHandler = async () => {
           await insertChannelRecipients(client, filteredRecipients, channels[i].id)
         }
         await insertChannel(channels[i])
+        const messages = channelMessageMap.get(`c${channels[i].id}`)
+        if (messages) await insertMessages(client, messages, channels[i].id)
         bar.tick()
         break
       }
